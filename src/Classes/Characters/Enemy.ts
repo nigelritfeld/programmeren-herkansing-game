@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js'
 import { Game } from '../game'
 
-export class Player extends PIXI.AnimatedSprite {
+export class Enemy extends PIXI.AnimatedSprite {
 
     private readonly gravity: number = 0.0981
     private readonly bounce: number = 0.985

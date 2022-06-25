@@ -23,6 +23,10 @@ export class Assets extends PIXI.Loader {
         this.assets = [
             { name: "human", url: "Sprites/human/human.json" },
             { name: "ground", url: "images/ground.png" },
+            { name: "background", url: "images/background.png" },
+            { name: "background-clouds", url: "images/background-clouds.png" },
+            { name: "background-trees", url: "images/background-trees.png" },
+            { name: "background-trees-bottom", url: "images/background-trees-bottom.png" },
             // { name: "fishTexture", url: "fish.png" },
         ]
 
