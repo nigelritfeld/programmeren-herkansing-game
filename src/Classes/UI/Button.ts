@@ -6,7 +6,6 @@ export class Button extends PIXI.Graphics {
         super()
         // this.width = width
         // this.height = height
-
         // Creating rect
         this.beginFill(0xDE3249);
         this.drawRoundedRect(0,0, width, height, 16);

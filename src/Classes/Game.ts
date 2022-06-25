@@ -1,81 +1,86 @@
 import * as PIXI from 'pixi.js'
-
-import fishImage from "../images/fish.png"
-import bubbleImage from "../images/bubble.png"
-import waterImage from "../images/water.jpg"
-import {Fish} from "./Characters/Fish";
 import {Player} from "./Characters/Player";
 import {Sprite} from "pixi.js";
+import {Assets} from "./Assets";
 
 export class Game {
 
-    textures: PIXI.Loader
-    loader: PIXI.Loader
     app: PIXI.Application
     fishes: Array<Sprite>
-    playerTextures: Array<any>
+    player: Player
 
-    constructor(app:PIXI.Application) {
+    constructor(app: PIXI.Application) {
         this.app = app
-        this.playerTextures = []
         this.fishes = []
-        this.textures = new PIXI.Loader()
-        this.textures.add('fishTexture', fishImage)
-            .add('bubbleTexture', bubbleImage)
-            .add('waterTexture', waterImage)
-
-        // this.loader = PIXI.Loader.shared;
-        // // console.log(this.loader)
-        // this.loader.add('pig', 'pig.json')
-        // this.loader.load(()=>this.handleLoadComplete());
-        this.textures.load(()=> this.loadCompleted())
+        this.app.loader = new Assets(this)
     }
 
-    private update() {
+    public handleLoadComplete() {
 
     }
-    private handleLoadComplete(){
-        console.log('Spritesheet loading.')
-        // console.log(this.loader.resources.pig.spritesheet)
-        // let tex = this.loader.resources.player.spritesheet;
-        // // @ts-ignore
-        // let sprite = new PIXI.AnimatedSprite(tex.animations.pixels_large);
-        let fish = new Fish(this.textures.resources['fishTexture'].texture!, this.app)
-        console.log('sprite')
-        // console.log(sprite)
-        this.app.stage.addChild(fish)
-    }
-    private loadCompleted() {
-        console.log('Load completed')
 
-        for (let i= 0; i<10; i++){
-            let fish = new PIXI.Sprite(this.textures.resources["fishTexture"].texture!)
-            this.fishes.push(fish)
+    private createPlayerFrames(): PIXI.Texture[][] {
+        // create an array of textures from an image path
+        let idleAnimation = ["idle/images/human-idle_01.png", "idle/images/human-idle_02.png", "idle/images/human-idle_03.png", "idle/images/human-idle_04.png", "idle/images/human-idle_05.png", "idle/images/human-idle_06.png", "idle/images/human-idle_07.png", "idle/images/human-idle_08.png", "idle/images/human-idle_09.png", "idle/images/human-idle_10.png", "idle/images/human-idle_11.png"];
+        let hitAnimation = ["hit/images/human-hit_01.png", "hit/images/human-hit_02.png"];
+        let doorOutAnimation = ["door-out/images/human-door-out_01.png", "door-out/images/human-door-out_02.png", "door-out/images/human-door-out_03.png", "door-out/images/human-door-out_04.png", "door-out/images/human-door-out_05.png", "door-out/images/human-door-out_06.png", "door-out/images/human-door-out_07.png", "door-out/images/human-door-out_08.png"];
+        let attackAnimation = ["attack/images/human-attack_01.png","attack/images/human-attack_02.png","attack/images/human-attack_03.png"]
+        let runAnimation = 	["run/images/human-run_01.png","run/images/human-run_02.png","run/images/human-run_03.png","run/images/human-run_04.png","run/images/human-run_05.png","run/images/human-run_06.png","run/images/human-run_07.png","run/images/human-run_08.png"];
+
+        let idleTextures = [];
+
+        for (let i=0; i < idleAnimation.length; i++)
+        {
+            let texture = PIXI.Texture.from(idleAnimation[i]);
+            idleTextures.push(texture);
+        }
+        let runTextures = [];
+
+        for (let i=0; i < runAnimation.length; i++)
+        {
+            let texture = PIXI.Texture.from(runAnimation[i]);
+            runTextures.push(texture);
+        }
+        let hitTextures = [];
+
+        for (let i=0; i < hitAnimation.length; i++)
+        {
+            let texture = PIXI.Texture.from(hitAnimation[i]);
+            hitTextures.push(texture);
         }
 
-        // // frames opslaan in een array
-        // for (let i = 0; i <= 4; i++) {
-        //     // const texture = PIXI.Texture.from(`player${i + 1}.png`);
-        //     const texture = PIXI.Texture.from(`Attack-(38x28)_0${i + 1}.png`);
-        //     this.playerTextures.push(texture);
-        // }
-        // console.log(this.playerTextures)
+        let doorOutTextures = [];
+
+        for (let i=0; i < doorOutAnimation.length; i++)
+        {
+            let texture = PIXI.Texture.from(doorOutAnimation[i]);
+            doorOutTextures.push(texture);
+        }
+        let attackTextures = [];
+
+        for (let i=0; i < attackAnimation.length; i++)
+        {
+            let texture = PIXI.Texture.from(attackAnimation[i]);
+            attackTextures.push(texture);
+        }
+
+        return [idleTextures, hitTextures, doorOutTextures,attackTextures,runTextures ]
     }
 
+    private update(delta: number) {
+        //todo: Update characters
+        this.player.update(delta)
+        //todo: Update controllers
+        //todo: Check for collision controllers
+    }
 
-    public start(){
+    public start() {
         console.log('Started game!')
-        for (let fish of this.fishes){
-            this.app.stage.addChild(fish)
-        }
-        // let player = new Player(this.playerTextures)
-        // this.app.stage.addChild(player)
-        // player.width = 100;
-        // player.height = 100;
-        // player.x = 100;
-        // player.y = 100;
-        // player.anchor.set(0.5);
-        // player.play();
+        let frames = this.createPlayerFrames()
+        this.player = new Player(this.app, frames, 400, 400)
+        this.app.stage.addChild(this.player)
+        this.app.ticker.add((delta: number) => this.update(delta))
+
     }
 
 }
