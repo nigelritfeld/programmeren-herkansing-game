@@ -2,7 +2,4 @@
 /node_modules/
 .parcel-cache
 .idea
-.docs
-docs
-/docs
 ./sprites
