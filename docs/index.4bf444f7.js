@@ -561,7 +561,6 @@ class Game {
     bg = [];
     constructor(app){
         this.app = app;
-        this.fishes = [];
         this.app.loader = new _assets.Assets(this);
         console.log(this.app.loader);
     }

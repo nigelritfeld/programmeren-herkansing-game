@@ -8,13 +8,11 @@ import Background from "./UI/Background";
 export class Game {
 
     app: PIXI.Application
-    fishes: Array<Sprite>
     player: Player
     bg: Array<Background> = []
 
     constructor(app: PIXI.Application) {
         this.app = app
-        this.fishes = []
         this.app.loader = new Assets(this)
 
         console.log(this.app.loader)
@@ -66,7 +64,6 @@ export class Game {
 
         return [idleTextures, hitTextures, doorOutTextures, attackTextures, runTextures]
     }
-
 
     private update(delta: number) {
         //todo: Update characters
