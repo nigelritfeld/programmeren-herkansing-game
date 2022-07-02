@@ -555,14 +555,11 @@ parcelHelpers.export(exports, "Game", ()=>Game
 var _pixiJs = require("pixi.js");
 var _player = require("./Characters/Player");
 var _assets = require("./Assets");
-var _background = require("./UI/Background");
-var _backgroundDefault = parcelHelpers.interopDefault(_background);
 class Game {
-    bg = [];
     constructor(app){
         this.app = app;
+        this.fishes = [];
         this.app.loader = new _assets.Assets(this);
-        console.log(this.app.loader);
     }
     handleLoadComplete() {}
     createPlayerFrames() {
@@ -645,63 +642,20 @@ class Game {
     update(delta) {
         //todo: Update characters
         this.player.update(delta);
-        for (let bg of this.bg)bg.update();
     //todo: Update controllers
     //todo: Check for collision controllers
-    }
-    // grounded(sprite1:PIXI.Sprite, sprite2:PIXI.Sprite) {
-    //     const bounds1 = sprite1.getBounds()
-    //     const bounds2 = sprite2.getBounds()
-    //
-    //     return bounds1.x < bounds2.x + bounds2.width
-    //         && bounds1.x + bounds1.width > bounds2.x
-    //         && bounds1.y < bounds2.y + bounds2.height
-    //         && bounds1.y + bounds1.height > bounds2.y;
-    // }
-    // collision(sprite1:PIXI.Sprite, sprite2:PIXI.Sprite) {
-    //     const bounds1 = sprite1.getBounds()
-    //     const bounds2 = sprite2.getBounds()
-    //
-    //     return bounds1.x < bounds2.x + bounds2.width
-    //         && bounds1.x + bounds1.width > bounds2.x
-    //         && bounds1.y < bounds2.y + bounds2.height
-    //         && bounds1.y + bounds1.height > bounds2.y;
-    // }
-    addBackground() {
-        this.bg.push(new _backgroundDefault.default(this.app.loader.resources["background"].texture, this.app.screen.width, this.app.screen.height, 0));
-        this.bg.push(new _backgroundDefault.default(this.app.loader.resources["background-clouds"].texture, this.app.screen.width, this.app.screen.height, 0));
-        this.bg.push(new _backgroundDefault.default(this.app.loader.resources["background-trees"].texture, this.app.screen.width, this.app.screen.height, 0));
-        this.bg.push(new _backgroundDefault.default(this.app.loader.resources["background-trees-bottom"].texture, this.app.screen.width, this.app.screen.height, -1));
-        //
-        for (let bg of this.bg)this.app.stage.addChild(bg);
     }
     start() {
         console.log('Started game!');
         let frames = this.createPlayerFrames();
-        this.addBackground();
-        // let platform = new Ground(this.app.loader.resources.ground.textures, this.app)
-        let ground = _pixiJs.Sprite.from('images/ground.png');
-        ground.width = this.app.screen.width;
-        ground.x = this.app.screen.width / 2;
-        ground.y = this.app.screen.height / 2;
-        ground.height = 500;
-        ground.anchor.set(0.5);
-        let platform = _pixiJs.Sprite.from('images/ground.png');
-        platform.width = 200;
-        platform.x = 200;
-        platform.y = 100;
-        platform.height = 500;
-        platform.anchor.set(0.5);
-        this.player = new _player.Player(this.app, frames, 400, 200);
-        this.app.stage.addChild(platform);
-        this.app.stage.addChild(ground);
+        this.player = new _player.Player(this.app, frames, 400, 400);
         this.app.stage.addChild(this.player);
         this.app.ticker.add((delta)=>this.update(delta)
         );
     }
 }
 
-},{"./Assets":"cYGyb","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./Characters/Player":"iX5eg","pixi.js":"dsYej","./UI/Background":"gGUVB"}],"cYGyb":[function(require,module,exports) {
+},{"./Assets":"cYGyb","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./Characters/Player":"iX5eg","pixi.js":"dsYej"}],"cYGyb":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "Assets", ()=>Assets
@@ -717,26 +671,6 @@ class Assets extends _pixiJs.Loader {
             {
                 name: "human",
                 url: "Sprites/human/human.json"
-            },
-            {
-                name: "ground",
-                url: "images/ground.png"
-            },
-            {
-                name: "background",
-                url: "images/background.png"
-            },
-            {
-                name: "background-clouds",
-                url: "images/background-clouds.png"
-            },
-            {
-                name: "background-trees",
-                url: "images/background-trees.png"
-            },
-            {
-                name: "background-trees-bottom",
-                url: "images/background-trees-bottom.png"
             }, 
         ];
         this.assets.forEach((asset)=>{
@@ -37265,15 +37199,15 @@ class Player extends _pixiJs.AnimatedSprite {
     bounce = 0.985;
     speedX = 0;
     speedY = 0;
-    health = 5;
-    state = 'spawning';
-    grounded = false;
     texturesArray = [];
     constructor(app, textures, x, y){
         const [idleTextures, attackTextures] = textures;
         super(idleTextures);
         this.texturesArray = textures;
         this.app = app;
+        this.jumping = false;
+        this.running = false;
+        this.attacking = false;
         /*
          * An AnimatedSprite inherits all the properties of a PIXI sprite
          * so you can change its position, its anchor, mask it, etc
@@ -37291,7 +37225,6 @@ class Player extends _pixiJs.AnimatedSprite {
     // this.onComplete = () => this.destroy()
     }
     onKeyDown(e) {
-        if (this.state === 'spawning') return;
         switch(e.key.toUpperCase()){
             case " ":
                 this.attack();
@@ -37299,169 +37232,125 @@ class Player extends _pixiJs.AnimatedSprite {
             case "A":
             case "ARROWLEFT":
                 this.runLeft();
+                this.speedX = -1;
                 break;
             case "D":
             case "ARROWRIGHT":
                 console.log(e.key.toUpperCase());
                 this.run();
+                this.speedX = 1;
                 break;
             case "W":
             case "ARROWUP":
+                this.speedY = -1;
                 this.jump();
                 break;
             case "S":
             case "ARROWDOWN":
-                break;
-            case "R":
-                this.x = this.width;
-                this.y = 100;
-                this.state = 'spawning';
+                this.speedY = 7;
                 break;
         }
     }
     onKeyUp(e) {
-        if (this.state === 'spawning') return;
         switch(e.key.toUpperCase()){
             case " ":
-                this.state = 'stoppedAttacking';
-                this.textures = this.texturesArray[0];
                 break;
             case "A":
             case "D":
             case "ARROWLEFT":
-                this.textures = this.texturesArray[0];
-                this.speedX = 0;
             case "ARROWRIGHT":
-                this.textures = this.texturesArray[0];
                 this.speedX = 0;
                 break;
             case "W":
             case "S":
             case "ARROWUP":
                 this.speedY = 0;
-                this.state = 'falling';
+                this.bounceUpFrom(this.app.screen.bottom - this.height);
+                this.jumping = false;
             case "ARROWDOWN":
                 this.speedY = 0;
                 break;
         }
     }
     hit() {
-        this.health += -1;
-        this.textures = this.texturesArray[1];
+        const [hitTextures] = this.texturesArray;
+        this.textures = hitTextures;
+        console.log('Human hit..');
         this.play();
     }
     attack() {
-        if (this.state === 'attacking') return;
+        // const [attackTextures] = this.texturesArray
         this.textures = this.texturesArray[3];
-        this.state = 'attacking';
+        console.log('Attacking..');
         this.play();
     }
     doorOut() {
-        if (this.state === 'doorOut') return;
         const [doorOutTextures] = this.texturesArray;
-        this.textures = this.texturesArray[2];
+        console.log('Door out');
+        this.textures = doorOutTextures;
         this.play();
     }
     run() {
-        if (this.state === 'running') return;
-        this.speedX = 0;
-        if (this.scale.x === -1.5) this.scale.x *= -1; /* flip vertically */ 
-        this.textures = this.texturesArray[4];
-        this.state = 'running';
-        this.speedX += 3;
+        const [runTextures] = this.texturesArray;
+        console.log('Running right..');
+        this.textures = runTextures;
         this.play();
     }
     jump() {
-        console.log(this.grounded);
-        if (!this.grounded || this.state === 'jumping') return;
+        this.jumping = true;
         // place on top of height (screen or object)
-        // this.y = this.app.screen.bottom - this.height
-        const intervalID = setInterval(()=>{
-            this.grounded = false;
-            this.state = 'jumping';
-            this.speedY += -3;
-            // Your code here
-            // Parameters are purely optional.
-            console.log(a);
-            console.log(b);
-        }, 500, 'paea', '2');
-    // keep the object bouncing without loss
+        this.y = this.app.screen.bottom - this.height;
+        // keep the object bouncing without loss
+        this.speedY *= -this.bounce;
     }
     runLeft() {
-        if (this.state === 'runningLeft') return;
-        this.speedX = -3;
-        this.textures = this.texturesArray[4];
+        const [runTextures] = this.texturesArray;
+        this.textures = runTextures;
+        // this.anchor.x = 1;     /* 0 = top, 0.5 = center, 1 = bottom */
+        console.log(this.scale.x);
         if (this.scale.x !== -1.5) this.scale.x *= -1; /* flip vertically */ 
-        this.state = 'runningLeft';
         this.play();
     }
     update(delta) {
         super.update(delta);
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.keepInScreen(delta);
+        // this.x += this.speedX
+        // this.y += this.speedY
+        console.log(`Y ${this.y}`);
+        // console.log(`new ${ this.y += this.speedY}`)
+        this.keepInScreen();
+        this.fall(delta);
+    // this.bounceUpFrom(this.height)
     }
     fall(delta) {
-        if (this.grounded) return;
-        this.state = 'jumping';
-        console.log('need to fall');
+        if (this.jumping) return;
         this.x += this.speedX * delta;
         this.y += this.speedY * delta;
         this.speedY += this.gravity;
     }
-    keepInScreen(delta) {
-        this.fall(delta);
-        // if (this.getBounds().top < 0) {
-        //     this.speedY = 0
-        //     console.log('this.speedX *= -1')
-        //     this.y = (this.getBounds().top + 10)
-        //     console.log(this.height)
-        // }
-        // Collision left
+    keepInScreen() {
         if (this.getBounds().left < 0) {
-            this.speedX = 0;
-            // this.x = this.getBounds().left + 10
-            this.x = this.x + 1;
+            this.speedX *= -1;
+            console.log('this.speedX *= -1');
+            this.x = this.app.screen.left;
         }
-        // Collision right
         if (this.getBounds().right > this.app.screen.right) {
-            this.speedX = 0;
-            this.x = this.x - 1;
+            this.speedX *= -1;
+            console.log('this.speedX *= -1');
+            this.x = this.app.screen.right - this.width;
         }
-        // Collision bottom
-        if (this.getBounds().bottom > this.app.screen.bottom) {
-            if (this.grounded) return;
-            this.state = 'grounded';
-            this.speedY = 0;
-            this.grounded = true;
-            this.y = this.app.screen.bottom - 30;
-        }
+        if (this.getBounds().bottom > this.app.screen.bottom) // console.log('bottom is to low')
+        // this.bounceUpFrom(this.app.screen.bottom - this.height)
+        this.speedY = 0;
     }
     bounceUpFrom(height) {
         // place on top of height (screen or object)
-        // this.y = this.app.screen.bottom - this.height - 50
-        // this.speedY = height
-        // console.log(this.app.screen.bottom - this.height +1)
-        // keep the object bouncing without loss
-        this.speedY -= 100;
+        // this.y = this.app.screen.bottom - this.height +1
+        this.speedY = height;
+        console.log(this.app.screen.bottom - this.height + 1);
+    // keep the object bouncing without loss
     // this.speedY *= -this.bounce
     }
 }
-
-},{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gGUVB":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _pixiJs = require("pixi.js");
-class Background extends _pixiJs.TilingSprite {
-    constructor(texture, w, h, y){
-        super(texture, w, h);
-        this.y = y;
-    }
-    update() {
-        this.tilePosition.x -= 3;
-    }
-}
-exports.default = Background;
 
 },{"pixi.js":"dsYej","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hRWhx":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
